@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 	"url_shortener/internal/config"
+	"url_shortener/internal/storage/psql"
 )
 
 const (
@@ -28,6 +29,14 @@ func main() {
 	log.Debug("Debug messages are enabled")
 
 	//TODO: init logger - slog
+
+	connStr := "user=postgres dbname=postgres password=1233 host=localhost port=5432 sslmode=disable"
+	stor, err := psql.New(connStr)
+	if err != nil {
+		// log.Error("Error create postgresql: %s\n", err)
+		fmt.Println(err)
+	}
+	fmt.Println(stor)
 
 	//TODO: init storage
 
