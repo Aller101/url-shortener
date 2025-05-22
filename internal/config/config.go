@@ -13,10 +13,20 @@ type Config struct {
 	Env         string `yaml:"env" env-default:"local"`
 	StoragePath string `yaml:"storage_path" env-requiared:"true"`
 	HTTPServer  `yaml:"http_server"`
+	PostgresDB  `yaml:"postgres_db"`
 }
 
 type HTTPServer struct {
 	Address string `yaml:"address"`
+}
+
+type PostgresDB struct {
+	User     string `yaml:"user"`
+	Dbname   string `yaml:"dbname"`
+	Password string `yaml:"password"`
+	Host     string `yaml:"host"`
+	Port     string `yaml:"port"`
+	Sslmode  string `yaml:"sslmode"`
 }
 
 func MustLoad() *Config {

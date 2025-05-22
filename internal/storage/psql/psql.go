@@ -26,26 +26,52 @@ func New(connStr string) (*Storage, error) {
 		log.Fatalf("Ошибка ping: %v", err)
 	}
 
-	defer db.Close()
+	// defer db.Close()
 
 	stmt, err := db.Prepare(`
 	CREATE TABLE IF NOT EXISTS url(
 			id SERIAL PRIMARY KEY,
 			alias TEXT NOT NULL UNIQUE,
 			url TEXT NOT NULL
-		);
-		
-		`)
+			);
+			
+			`)
 	// CREATE INDEX IF NOT EXISTS idx_alias ON url(alias);
 
 	if err != nil {
-		return nil, fmt.Errorf("err1")
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
 	_, err = stmt.Exec()
 	if err != nil {
-		return nil, fmt.Errorf("err2")
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return &Storage{db: db}, nil
+}
+
+func (s *Storage) SaveURL(urlToSave, alias string) (int64, error) {
+	const op = "storage.psql.SaveURL"
+	stmt, err := s.db.Prepare("INSERT INTO url(url, alias) VALUES($1, $2) RETURNING id")
+	if err != nil {
+		return 0, fmt.Errorf("%s:1 %w", op, err)
+	}
+	// _, err = stmt.Exec(urlToSave, alias)
+	// if err != nil {
+
+	// 	//TODO add constraints
+	// 	return 0, fmt.Errorf("%s:2 %w", op, err)
+	// }
+
+	// id, err := res.LastInsertId()
+
+	var id int64
+	err = stmt.QueryRow(urlToSave, alias).Scan(&id)
+
+	if err != nil {
+		return 0, fmt.Errorf("%s:3 %w", op, err)
+	}
+
+	return id, nil
+
 }
