@@ -3,10 +3,16 @@ package main
 import (
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"url_shortener/internal/config"
+	"url_shortener/internal/http-server/handlers/url/save"
 	"url_shortener/internal/lib/logger/sl"
 	"url_shortener/internal/storage/psql"
+
+	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/chi/v5"
+	// "github.com/go-chi/chi/v5/middleware"
 )
 
 const (
@@ -34,22 +40,39 @@ func main() {
 	// connStr := "user=postgres dbname=postgres password=1233 host=localhost port=5432 sslmode=disable"
 
 	connStr := fmt.Sprintf("user=%s dbname=%s password=%s host=%s port=%s sslmode=%s", cfg.User, cfg.Dbname, cfg.Password, cfg.Host, cfg.Port, cfg.Sslmode)
-	stor, err := psql.New(connStr)
-	if err != nil {
-		log.Error("Error create postgresql: %s\n", sl.Err(err))
-		os.Exit(1)
-	}
-	_ = stor
-
-	id, err := stor.SaveURL("yandex.ru", "r")
+	storage, err := psql.New(connStr)
 	if err != nil {
 		log.Error("Error create postgresql: %s\n", sl.Err(err))
 		os.Exit(1)
 	}
 
-	fmt.Println(id)
+	str, err := storage.GetURL("g")
+	if err != nil {
+		log.Error("URL not found: %s\n", sl.Err(err))
+	}
+
+	// slog.Info("URL: %s", slog.StringValue(str))
+	fmt.Println(str)
 
 	//TODO: init router - chi, "chi render"
+
+	router := chi.NewRouter()
+	router.Use(middleware.RequestID)
+	router.Use(middleware.RealIP)
+
+	router.Post("/url", save.New(log, storage))
+	//middleware (при обработке каждого запроса - выполняется цепочка handler-ов, например авторизация)
+	log.Info("starting server", slog.String("addres", cfg.Address))
+
+	srv := &http.Server{
+		Addr:    cfg.Address,
+		Handler: router,
+	}
+
+	if err := srv.ListenAndServe(); err != nil {
+		log.Error("failed to start server")
+	}
+	log.Error("server stopped")
 
 	//TODO: run server
 
