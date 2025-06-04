@@ -6,13 +6,13 @@ import (
 	"net/http"
 	"os"
 	"url_shortener/internal/config"
+	"url_shortener/internal/http-server/handlers/redirect"
 	"url_shortener/internal/http-server/handlers/url/save"
 	"url_shortener/internal/lib/logger/sl"
 	"url_shortener/internal/storage/psql"
 
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
-	// "github.com/go-chi/chi/v5/middleware"
 )
 
 const (
@@ -39,7 +39,7 @@ func main() {
 	//TODO: init storage
 	// connStr := "user=postgres dbname=postgres password=1233 host=localhost port=5432 sslmode=disable"
 
-	connStr := fmt.Sprintf("user=%s dbname=%s password=%s host=%s port=%s sslmode=%s", cfg.User, cfg.Dbname, cfg.Password, cfg.Host, cfg.Port, cfg.Sslmode)
+	connStr := fmt.Sprintf("user=%s dbname=%s password=%s host=%s port=%s sslmode=%s", cfg.PostgresDB.User, cfg.Dbname, cfg.PostgresDB.Password, cfg.Host, cfg.Port, cfg.Sslmode)
 	storage, err := psql.New(connStr)
 	if err != nil {
 		log.Error("Error create postgresql: %s\n", sl.Err(err))
@@ -60,7 +60,18 @@ func main() {
 	router.Use(middleware.RequestID)
 	router.Use(middleware.RealIP)
 
-	router.Post("/url", save.New(log, storage))
+	router.Route("/url", func(r chi.Router) {
+		r.Use(middleware.BasicAuth("url-shortener", map[string]string{
+			cfg.HTTPServer.User: cfg.HTTPServer.Password,
+		}))
+
+		r.Post("/", save.New(log, storage))
+
+		// TODO: DELETE /{id}
+
+	})
+
+	router.Get("/{alias}", redirect.New(log, storage))
 	//middleware (при обработке каждого запроса - выполняется цепочка handler-ов, например авторизация)
 	log.Info("starting server", slog.String("addres", cfg.Address))
 

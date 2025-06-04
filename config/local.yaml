@@ -2,6 +2,8 @@ env: "local" # local, dev, prod
 storage_path: "./storage/storage.db"
 http_server:
   address: "localhost:8082"
+  user: "user"
+  password: "password"
 postgres_db:
   user: "postgres"
   dbname: "postgres"

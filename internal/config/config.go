@@ -1,12 +1,10 @@
 package config
 
 import (
-	"fmt"
 	"log"
 	"os"
 
 	"github.com/ilyakaznacheev/cleanenv"
-	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -17,7 +15,9 @@ type Config struct {
 }
 
 type HTTPServer struct {
-	Address string `yaml:"address"`
+	Address  string `yaml:"address"`
+	User     string `yaml:"user" env-requiared:"true"`
+	Password string `yaml:"password" env-requiared:"true" env:"HTTP_SERVER_PASSWORD"`
 }
 
 type PostgresDB struct {
@@ -31,9 +31,11 @@ type PostgresDB struct {
 
 func MustLoad() *Config {
 
-	if err := godotenv.Load("local.env"); err != nil {
-		fmt.Printf("no .env file found, loading from system\n")
-	}
+	os.Setenv("CONFIG_PATH", "./config/local.yaml")
+
+	// if err := godotenv.Load("local.env"); err != nil {
+	// 	fmt.Printf("no .env file found, loading from system\n")
+	// }
 
 	configPath := os.Getenv("CONFIG_PATH")
 	if configPath == "" {
