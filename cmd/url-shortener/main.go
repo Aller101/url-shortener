@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"url_shortener/internal/config"
+	"url_shortener/internal/http-server/handlers/delete"
 	"url_shortener/internal/http-server/handlers/redirect"
 	"url_shortener/internal/http-server/handlers/url/save"
 	"url_shortener/internal/lib/logger/sl"
@@ -50,9 +51,18 @@ func main() {
 	if err != nil {
 		log.Error("URL not found: %s\n", sl.Err(err))
 	}
-
 	// slog.Info("URL: %s", slog.StringValue(str))
 	fmt.Println(str)
+	err = storage.DeleteURL("g")
+	if err != nil {
+		log.Error("URL not deleted: %s\n", sl.Err(err))
+	}
+	// ss, err := storage.SaveURL("google.com", "g")
+	// if err != nil {
+	// 	log.Error("URL not found: %s\n", sl.Err(err))
+	// }
+	// // slog.Info("URL: %s", slog.StringValue(ss))
+	// fmt.Println(ss)
 
 	//TODO: init router - chi, "chi render"
 
@@ -66,12 +76,14 @@ func main() {
 		}))
 
 		r.Post("/", save.New(log, storage))
+		r.Delete("/{alias}", delete.New(log, storage))
 
 		// TODO: DELETE /{id}
 
 	})
 
 	router.Get("/{alias}", redirect.New(log, storage))
+
 	//middleware (при обработке каждого запроса - выполняется цепочка handler-ов, например авторизация)
 	log.Info("starting server", slog.String("addres", cfg.Address))
 
