@@ -1,10 +1,12 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
+	"url_shortener/internal/clients/sso/ssogrpc"
 	"url_shortener/internal/config"
 	"url_shortener/internal/http-server/handlers/delete"
 	"url_shortener/internal/http-server/handlers/redirect"
@@ -36,6 +38,19 @@ func main() {
 	log := setupLogger(cfg.Env)
 	log.Info("Starting app", slog.String("env", cfg.Env))
 	log.Debug("Debug messages are enabled")
+
+	ssoClient, err := ssogrpc.New(context.Background(), log, cfg.Clients.SSO.Address,
+		cfg.Clients.SSO.Timeout, cfg.Clients.SSO.RetriesCount)
+	if err != nil {
+		log.Error("failed to init sso client", sl.Err(err))
+		os.Exit(1)
+	}
+
+	isAdm, err := ssoClient.IsAdmin(context.Background(), 1)
+	logg := log.With("IsAdmin?", isAdm)
+	logg.Info("isAdmin: 1?")
+
+	fmt.Println(isAdm)
 
 	//TODO: init storage
 	// connStr := "user=postgres dbname=postgres password=1233 host=localhost port=5432 sslmode=disable"

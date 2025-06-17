@@ -3,6 +3,7 @@ package config
 import (
 	"log"
 	"os"
+	"time"
 
 	"github.com/ilyakaznacheev/cleanenv"
 )
@@ -12,6 +13,8 @@ type Config struct {
 	StoragePath string `yaml:"storage_path" env-requiared:"true"`
 	HTTPServer  `yaml:"http_server"`
 	PostgresDB  `yaml:"postgres_db"`
+	Clients     ClientConfig `yaml:"clients"`
+	AppSecret   string       `yaml:"app_secret"`
 }
 
 type HTTPServer struct {
@@ -27,6 +30,17 @@ type PostgresDB struct {
 	Host     string `yaml:"host"`
 	Port     string `yaml:"port"`
 	Sslmode  string `yaml:"sslmode"`
+}
+
+type Client struct {
+	Address      string        `yaml:"addres" env-default:"localhost:44040"`
+	Timeout      time.Duration `yaml:"timeout" env-default:"4s"`
+	RetriesCount int           `yaml:"retriesCount" env-default:"2"`
+	// Insecure     bool          `yaml:"insecure"`
+}
+
+type ClientConfig struct {
+	SSO Client `yaml:"sso"`
 }
 
 func MustLoad() *Config {
