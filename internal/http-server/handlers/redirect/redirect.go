@@ -1,28 +1,37 @@
 package redirect
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
+
 	"url_shortener/internal/lib/api/response"
 	"url_shortener/internal/lib/logger/sl"
 	"url_shortener/internal/storage"
 
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 )
 
-type URLGetter interface {
-	GetURL(alias string) (string, error)
+type Response struct {
+	response.Response
+	URL string `json:"alias,omitempty"`
 }
 
-func New(log *slog.Logger, urlGetter URLGetter) http.HandlerFunc {
+type URLGetter interface {
+	GetURL(ctx context.Context, alias string) (string, error)
+}
+
+func New(ctx context.Context, log *slog.Logger, urlGetter URLGetter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.url.redirect.New"
 		log := log.With(
 			slog.String("op", op),
 		)
 		alias := chi.URLParam(r, "alias")
+		fmt.Println(alias)
 		if alias == "" {
 			log.Info("alias is empty")
 
@@ -31,7 +40,7 @@ func New(log *slog.Logger, urlGetter URLGetter) http.HandlerFunc {
 			return
 		}
 
-		resURL, err := urlGetter.GetURL(alias)
+		resURL, err := urlGetter.GetURL(ctx, alias)
 		if errors.Is(err, storage.ErrURLNotFound) {
 			log.Info("url not found", "alias", alias)
 
@@ -50,6 +59,9 @@ func New(log *slog.Logger, urlGetter URLGetter) http.HandlerFunc {
 
 		log.Info("got url", slog.String("url", resURL))
 
-		http.Redirect(w, r, resURL, http.StatusFound)
+		render.JSON(w, r, Response{Response: response.OK(),
+			URL: resURL})
+
+		// http.Redirect(w, r, resURL, http.StatusFound)
 	}
 }

@@ -2,17 +2,15 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
-	"url_shortener/internal/clients/sso/ssogrpc"
 	"url_shortener/internal/config"
 	"url_shortener/internal/http-server/handlers/delete"
 	"url_shortener/internal/http-server/handlers/redirect"
 	"url_shortener/internal/http-server/handlers/url/save"
 	"url_shortener/internal/lib/logger/sl"
-	"url_shortener/internal/storage/psql"
+	"url_shortener/internal/storage/sqlite"
 
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
@@ -26,60 +24,34 @@ const (
 
 func main() {
 
-	// os.Setenv("CONFIG_PATH", "./config/local.yaml")
-	// os.Setenv("CGO_ENABLED", "1")
-	// fmt.Println("get pathvar: ", os.Getenv("CONFIG_PATH"))
-
-	// TODO: init config - cleanenv
 	cfg := config.MustLoad()
-	fmt.Println(cfg)
-
-	//TODO: init logger - slog
+	ctx, cancel := context.WithCancel(context.Background())
 	log := setupLogger(cfg.Env)
+
 	log.Info("Starting app", slog.String("env", cfg.Env))
 	log.Debug("Debug messages are enabled")
 
-	ssoClient, err := ssogrpc.New(context.Background(), log, cfg.Clients.SSO.Address,
-		cfg.Clients.SSO.Timeout, cfg.Clients.SSO.RetriesCount)
-	if err != nil {
-		log.Error("failed to init sso client", sl.Err(err))
-		os.Exit(1)
-	}
+	// ssoClient, err := ssogrpc.New(context.Background(), log, cfg.Clients.SSO.Address,
+	// 	cfg.Clients.SSO.Timeout, cfg.Clients.SSO.RetriesCount)
+	// if err != nil {
+	// 	log.Error("failed to init sso client", sl.Err(err))
+	// 	os.Exit(1)
+	// }
 
-	isAdm, err := ssoClient.IsAdmin(context.Background(), 1)
-	logg := log.With("IsAdmin?", isAdm)
-	logg.Info("isAdmin: 1?")
+	// isAdm, err := ssoClient.IsAdmin(context.Background(), 1)
+	// logg := log.With("IsAdmin?", isAdm)
+	// logg.Info("isAdmin: 1?")
 
-	fmt.Println(isAdm)
+	// fmt.Println(isAdm)
 
-	//TODO: init storage
-	// connStr := "user=postgres dbname=postgres password=1233 host=localhost port=5432 sslmode=disable"
+	// connStr := fmt.Sprintf("user=%s dbname=%s password=%s host=%s port=%s sslmode=%s", cfg.PostgresDB.User, cfg.Dbname, cfg.PostgresDB.Password, cfg.Host, cfg.Port, cfg.Sslmode)
+	// storage, err := psql.New(connStr)
 
-	connStr := fmt.Sprintf("user=%s dbname=%s password=%s host=%s port=%s sslmode=%s", cfg.PostgresDB.User, cfg.Dbname, cfg.PostgresDB.Password, cfg.Host, cfg.Port, cfg.Sslmode)
-	storage, err := psql.New(connStr)
+	storage, err := sqlite.New(cfg.StoragePath)
 	if err != nil {
 		log.Error("Error create postgresql: %s\n", sl.Err(err))
 		os.Exit(1)
 	}
-
-	str, err := storage.GetURL("g")
-	if err != nil {
-		log.Error("URL not found: %s\n", sl.Err(err))
-	}
-	// slog.Info("URL: %s", slog.StringValue(str))
-	fmt.Println(str)
-	err = storage.DeleteURL("g")
-	if err != nil {
-		log.Error("URL not deleted: %s\n", sl.Err(err))
-	}
-	// ss, err := storage.SaveURL("google.com", "g")
-	// if err != nil {
-	// 	log.Error("URL not found: %s\n", sl.Err(err))
-	// }
-	// // slog.Info("URL: %s", slog.StringValue(ss))
-	// fmt.Println(ss)
-
-	//TODO: init router - chi, "chi render"
 
 	router := chi.NewRouter()
 	router.Use(middleware.RequestID)
@@ -90,14 +62,14 @@ func main() {
 			cfg.HTTPServer.User: cfg.HTTPServer.Password,
 		}))
 
-		r.Post("/", save.New(log, storage))
-		r.Delete("/{alias}", delete.New(log, storage))
-
+		r.Post("/", save.New(ctx, log, storage))
+		r.Delete("/{alias}", delete.New(ctx, log, storage))
+		r.Get("/{alias}", redirect.New(ctx, log, storage))
 		// TODO: DELETE /{id}
 
 	})
 
-	router.Get("/{alias}", redirect.New(log, storage))
+	router.Get("/{alias}", redirect.New(ctx, log, storage))
 
 	//middleware (при обработке каждого запроса - выполняется цепочка handler-ов, например авторизация)
 	log.Info("starting server", slog.String("addres", cfg.Address))
@@ -110,9 +82,9 @@ func main() {
 	if err := srv.ListenAndServe(); err != nil {
 		log.Error("failed to start server")
 	}
-	log.Error("server stopped")
+	cancel()
 
-	//TODO: run server
+	log.Error("server stopped")
 
 }
 

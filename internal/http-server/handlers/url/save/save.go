@@ -1,6 +1,7 @@
 package save
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -26,10 +27,10 @@ type Response struct {
 const aliasLenght = 6
 
 type URLSaver interface {
-	SaveURL(urlToSave, alias string) (int64, error)
+	SaveURL(ctx context.Context, urlToSave, alias string) (int64, error)
 }
 
-func New(log *slog.Logger, urlSaver URLSaver) http.HandlerFunc {
+func New(ctx context.Context, log *slog.Logger, urlSaver URLSaver) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.url.save.New"
 		log = log.With(slog.String("op", op))
@@ -58,7 +59,7 @@ func New(log *slog.Logger, urlSaver URLSaver) http.HandlerFunc {
 			alias = random.NewRandomString(aliasLenght)
 		}
 
-		id, err := urlSaver.SaveURL(req.URL, alias)
+		id, err := urlSaver.SaveURL(ctx, req.URL, alias)
 		if err != nil {
 			if errors.Is(err, storage.ErrURLExists) {
 				log.Info("url already exists", slog.String("url", req.URL))
