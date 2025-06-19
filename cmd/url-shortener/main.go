@@ -2,9 +2,15 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
+	"runtime"
+	"sync"
+	"syscall"
+	"time"
 	"url_shortener/internal/config"
 	"url_shortener/internal/http-server/handlers/delete"
 	"url_shortener/internal/http-server/handlers/redirect"
@@ -23,9 +29,12 @@ const (
 )
 
 func main() {
+	fmt.Println("Активных горутин:", runtime.NumGoroutine())
 
 	cfg := config.MustLoad()
 	ctx, cancel := context.WithCancel(context.Background())
+	wg := &sync.WaitGroup{}
+
 	log := setupLogger(cfg.Env)
 
 	log.Info("Starting app", slog.String("env", cfg.Env))
@@ -64,27 +73,43 @@ func main() {
 
 		r.Post("/", save.New(ctx, log, storage))
 		r.Delete("/{alias}", delete.New(ctx, log, storage))
-		r.Get("/{alias}", redirect.New(ctx, log, storage))
 		// TODO: DELETE /{id}
 
 	})
-
 	router.Get("/{alias}", redirect.New(ctx, log, storage))
 
 	//middleware (при обработке каждого запроса - выполняется цепочка handler-ов, например авторизация)
 	log.Info("starting server", slog.String("addres", cfg.Address))
 
+	sgChan := make(chan os.Signal, 1)
+	signal.Notify(sgChan, os.Interrupt, syscall.SIGTERM)
+
 	srv := &http.Server{
 		Addr:    cfg.Address,
 		Handler: router,
 	}
-
-	if err := srv.ListenAndServe(); err != nil {
-		log.Error("failed to start server")
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err := srv.ListenAndServe(); err != nil {
+			log.Error("failed to start server")
+		}
+		log.Info("time sleep 5 sec")
+		time.Sleep(5 * time.Second)
+		log.Info("time sleep 0 sec")
+	}()
+	log.Info("starting gorutine")
+	fmt.Println("Активных горутин:", runtime.NumGoroutine())
+	<-sgChan
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Error("failed to stop server", sl.Err(err))
+		return
 	}
 	cancel()
-
+	wg.Wait()
+	log.Info("stopping main server")
 	log.Error("server stopped")
+	fmt.Println("Активных горутин:", runtime.NumGoroutine())
 
 }
 

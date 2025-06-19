@@ -1,3 +1,11 @@
 set CONFIG_PATH=./config/local.yaml
+set GOOSE_DRIVER=postgres
+set GOOSE_DBSTRING=postgresql://postgres:1233@localhost:5432/postgres?sslmode=disable
+
 set CONFIG_PATH
-go run .\cmd\url-shortener\main.go
+set GOOSE_DRIVER
+set GOOSE_DBSTRING
+
+goose -dir migrations up
+
+@REM go run .\cmd\url-shortener\main.go
