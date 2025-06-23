@@ -1,0 +1,44 @@
+
+# dir: mocks/{{ replaceAll .InterfaceDirRelative "internal" "internal_" }}
+# packages:
+#   url-shortener/internal/http-server/handlers/url/save:
+#     config:
+#       all: True
+
+# template: testify
+# packages:
+#     url-shortener/internal/http-server/handlers/url/save:
+#     # C:\Users\office\Desktop\golang\url-shortener\internal\http-server\handlers\url\save:
+#     # github.com/vektra/mockery/v3/pkg/fixtures:
+#         config:
+#             dir: C:/Users/office/Desktop/golang/url-shortener/internal/http-server/handlers/url/save
+#             filename: "save.go"
+#             pkgname: "save"
+#             structname: "Mock{{.InterfaceName}}"
+#         interfaces:
+#             URLSaver:
+       
+
+
+# dir: internal/http-server/handlers/url/save  # Путь к пакету с интерфейсом
+# name: URLSaver                              # Имя интерфейса
+# output: ./mocks                             # Папка для генерации моков
+# with-expecter: true    
+
+# dir: C:/Users/office/Desktop/golang/url-shortener/internal/http-server/handlers/url/save
+# name: URLSaver
+# output: ./mocks
+# with-expecter: true
+
+
+# dir: C:/Users/office/Desktop/golang/url-shortener/internal/http-server/handlers/url/save
+# name: URLSaver
+# output: ./mocks
+# with-expecter: true
+
+
+# version: 2
+# interfaces:
+#   URLSaver:
+#     dir: internal/http-server/handlers/url/save
+#     output: ./mocks

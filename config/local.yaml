@@ -2,6 +2,10 @@ env: "local" # local, dev, prod
 storage_path: "./storage/storage.db"
 http_server:
   address: "localhost:8082"
+  # время на чтение запроса и время на отправку запроса
+  timeout: 4s 
+  # время жизни соединения с клиентом
+  idle_timeout: 30s 
   user: "user"
   password: "password"
 postgres_db:

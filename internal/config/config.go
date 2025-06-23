@@ -18,9 +18,11 @@ type Config struct {
 }
 
 type HTTPServer struct {
-	Address  string `yaml:"address"`
-	User     string `yaml:"user" env-requiared:"true"`
-	Password string `yaml:"password" env-requiared:"true" env:"HTTP_SERVER_PASSWORD"`
+	Address     string        `yaml:"address"`
+	User        string        `yaml:"user" env-requiared:"true"`
+	Password    string        `yaml:"password" env-requiared:"true" env:"HTTP_SERVER_PASSWORD"`
+	Timeout     time.Duration `yaml:"timeout" env-default:"4s"`
+	IdleTimeout time.Duration `yaml:"idle_timeout" env-default:"60s"`
 }
 
 type PostgresDB struct {

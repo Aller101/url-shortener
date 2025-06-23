@@ -73,7 +73,6 @@ func main() {
 
 		r.Post("/", save.New(ctx, log, storage))
 		r.Delete("/{alias}", delete.New(ctx, log, storage))
-		// TODO: DELETE /{id}
 
 	})
 	router.Get("/{alias}", redirect.New(ctx, log, storage))
@@ -85,8 +84,11 @@ func main() {
 	signal.Notify(sgChan, os.Interrupt, syscall.SIGTERM)
 
 	srv := &http.Server{
-		Addr:    cfg.Address,
-		Handler: router,
+		Addr:         cfg.Address,
+		Handler:      router,
+		ReadTimeout:  cfg.Timeout,
+		WriteTimeout: cfg.Timeout,
+		IdleTimeout:  cfg.IdleTimeout,
 	}
 	wg.Add(1)
 	go func() {

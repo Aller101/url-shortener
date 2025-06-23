@@ -5,11 +5,13 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+
 	resp "url_shortener/internal/lib/api/response"
 	"url_shortener/internal/lib/logger/sl"
 	"url_shortener/internal/lib/random"
 	"url_shortener/internal/storage"
 
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator/v10"
 )
@@ -26,6 +28,7 @@ type Response struct {
 
 const aliasLenght = 6
 
+//go:generate go run github.com/vektra/mockery/v2@v2.43.1 --name=URLSaver
 type URLSaver interface {
 	SaveURL(ctx context.Context, urlToSave, alias string) (int64, error)
 }
@@ -33,9 +36,14 @@ type URLSaver interface {
 func New(ctx context.Context, log *slog.Logger, urlSaver URLSaver) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.url.save.New"
-		log = log.With(slog.String("op", op))
+		log = log.With(
+			slog.String("op", op),
+			slog.String("request_id", middleware.GetReqID(r.Context())),
+		)
 
 		var req Request
+
+		//unmarshal
 		err := render.DecodeJSON(r.Body, &req)
 		if err != nil {
 			log.Error("failed to decode request body", sl.Err(err))

@@ -20,6 +20,8 @@ type Response struct {
 	URL string `json:"alias,omitempty"`
 }
 
+// интерфейс по месту использования
+// сигнатура метода интерфейса должна дублировать сигнатуру метода из storage
 type URLGetter interface {
 	GetURL(ctx context.Context, alias string) (string, error)
 }
@@ -59,9 +61,11 @@ func New(ctx context.Context, log *slog.Logger, urlGetter URLGetter) http.Handle
 
 		log.Info("got url", slog.String("url", resURL))
 
-		render.JSON(w, r, Response{Response: response.OK(),
-			URL: resURL})
+		//просто возвращает ссылку
+		// render.JSON(w, r, Response{Response: response.OK(),
+		// 	URL: resURL})
 
-		// http.Redirect(w, r, resURL, http.StatusFound)
+		//в postman не работает)), только через браузер, тк перенеправляет по ссылке
+		http.Redirect(w, r, resURL, http.StatusFound)
 	}
 }

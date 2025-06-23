@@ -8,4 +8,4 @@ set GOOSE_DBSTRING
 
 goose -dir migrations up
 
-@REM go run .\cmd\url-shortener\main.go
+go run .\cmd\url-shortener\main.go
