@@ -13,7 +13,6 @@ import (
 
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
-	"github.com/go-playground/validator/v10"
 )
 
 type Request struct {
@@ -52,12 +51,20 @@ func New(ctx context.Context, log *slog.Logger, urlSaver URLSaver) http.HandlerF
 		}
 		log.Info("request body decoded", slog.Any("request", req))
 
-		if err := validator.New().Struct(req); err != nil {
-			validateErr := err.(validator.ValidationErrors)
+		// if err := validator.New().Struct(req); err != nil {
+		// 	validateErr := err.(validator.ValidationErrors)
 
-			log.Error("invalid request", sl.Err(err))
-			// render.JSON(w, r, resp.Error("invalid request"))
-			render.JSON(w, r, resp.ValidationError(validateErr))
+		// 	log.Error("invalid request", sl.Err(err))
+		// 	// render.JSON(w, r, resp.Error("invalid request"))
+		// 	render.JSON(w, r, resp.ValidationError(validateErr))
+
+		// 	return
+		// }
+
+		//TODO: добавить свою валидацию для тестов
+		if err := ValidReq(&req); err != nil {
+			render.JSON(w, r, resp.Error("invalid request"))
+			render.JSON(w, r, err)
 
 			return
 		}
@@ -86,4 +93,16 @@ func New(ctx context.Context, log *slog.Logger, urlSaver URLSaver) http.HandlerF
 		})
 
 	}
+}
+
+func ValidReq(req *Request) error {
+	if req.URL == "" {
+		return errors.New("ErrInvalidURL")
+	}
+
+	if len(req.URL) >= 10 || len(req.URL) <= 5 {
+		return errors.New("ErrLengts")
+	}
+
+	return nil
 }

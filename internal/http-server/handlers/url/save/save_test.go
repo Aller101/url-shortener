@@ -1,18 +1,22 @@
 package save_test
 
 import (
+	"bytes"
+	"context"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"testing"
+	"url-shortener/internal/http-server/handlers/url/save"
 	_ "url-shortener/internal/http-server/handlers/url/save"
+	"url-shortener/internal/lib/logger/slogdiscard"
 
-	// "url-shortener/internal/http-server/handlers/url/mocks"
 	"url-shortener/internal/http-server/handlers/url/save/mocks"
 
 	"go.uber.org/mock/gomock"
 )
 
 func TestSaveHandler(t *testing.T) {
-	gomock.NewController(t)
-	mocks.NewMockURLSaver()
 
 	tests := []struct {
 		name      string
@@ -40,14 +44,32 @@ func TestSaveHandler(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+
+		//чтобы каждый их этих тестов использовал свой нужный case
+		tt := tt
+
 		t.Run(tt.name, func(t *testing.T) {
+			//тесты запускаются параллельно
 			t.Parallel()
 
-			urlSaverMock := mos.NewMockURLSaver
+			ctr := gomock.NewController(t)
 
-			if tt.respError == "" || tt.mockError != nil {
-				urlSaverMock
-			}
+			defer ctr.Finish()
+			urlSaverMock := mocks.NewMockURLSaver(ctr)
+
+			// if tt.respError == "" || tt.mockError != nil {
+			// 	urlSaverMock.
+			// }
+
+			handler := save.New(context.Background(), slogdiscard.NewDiscardLogger(), urlSaverMock)
+
+			input := fmt.Sprintf(`{"url": "#{tc.url}", "alias": "#{tc.alias}"}`)
+
+			req, err := http.NewRequest(http.MethodPost, "/save", bytes.NewReader([]byte(input)))
+			// gomock.N
+
+			rr := httptest.NewRecorder()
+			handler.ServeHTTP(rr, req)
 		})
 	}
 }
