@@ -2,10 +2,17 @@ package save_test
 
 import (
 	"testing"
-	mos "url_shortener/internal/http-server/handlers/url/mockers"
+	_ "url-shortener/internal/http-server/handlers/url/save"
+
+	// "url-shortener/internal/http-server/handlers/url/mocks"
+	"url-shortener/internal/http-server/handlers/url/save/mocks"
+
+	"go.uber.org/mock/gomock"
 )
 
 func TestSaveHandler(t *testing.T) {
+	gomock.NewController(t)
+	mocks.NewMockURLSaver()
 
 	tests := []struct {
 		name      string

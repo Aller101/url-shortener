@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"url_shortener/internal/storage"
+	"url-shortener/internal/storage"
 
 	_ "github.com/lib/pq"
 )

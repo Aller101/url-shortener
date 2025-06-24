@@ -7,9 +7,9 @@ import (
 	"log/slog"
 	"net/http"
 
-	"url_shortener/internal/lib/api/response"
-	"url_shortener/internal/lib/logger/sl"
-	"url_shortener/internal/storage"
+	"url-shortener/internal/lib/api/response"
+	"url-shortener/internal/lib/logger/sl"
+	"url-shortener/internal/storage"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"

@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"url_shortener/internal/lib/api/response"
-	"url_shortener/internal/storage"
+	"url-shortener/internal/lib/api/response"
+	"url-shortener/internal/storage"
 
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
