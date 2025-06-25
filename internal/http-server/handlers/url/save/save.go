@@ -5,7 +5,9 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strings"
 
+	"url-shortener/internal/http-server/handlers"
 	resp "url-shortener/internal/lib/api/response"
 	"url-shortener/internal/lib/logger/sl"
 	"url-shortener/internal/lib/random"
@@ -96,12 +98,22 @@ func New(ctx context.Context, log *slog.Logger, urlSaver URLSaver) http.HandlerF
 }
 
 func ValidReq(req *Request) error {
+
 	if req.URL == "" {
-		return errors.New("ErrInvalidURL")
+		return handlers.ErrVoidURL
 	}
 
 	if len(req.URL) >= 10 || len(req.URL) <= 5 {
-		return errors.New("ErrLengts")
+		return handlers.ErrLengtURL
+	}
+
+	v := strings.TrimSpace(req.URL)
+	if len(v) == 0 {
+		return handlers.ErrLengtURL
+	}
+
+	if len(v) >= 10 || len(v) <= 5 {
+		return handlers.ErrLengtURL
 	}
 
 	return nil
